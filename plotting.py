@@ -200,12 +200,11 @@ def plot_formulation_screen(labels, retention, errors, path):
 
 def plot_inverse_prediction(cal, prediction, loq, path):
     """
-    Relative uncertainty of a back-calculated concentration, across the curve.
-
-    Absolute CI width is nearly flat and hides the story. As a percentage of
-    the value being reported, the picture inverts: a sample near the LOQ can
-    carry 20% relative error off a curve with R^2 = 0.999. That is the number
-    that decides whether a measurement is reportable.
+    Relative uncertainty of a back-calculated concentration
+    Absolute CI width is almost flat
+    As a percentage of the value being reported, the picture inverts: a sample near the LOQ can
+    have 20% relative error off a curve with R^2 = 0.999. This number
+    decides whether a measurement is reportable
     """
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
     _style(ax)
