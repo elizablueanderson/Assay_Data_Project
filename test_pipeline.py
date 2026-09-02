@@ -1,9 +1,10 @@
 """
-Tests for the analysis code.
+Tests for the analysis code
 
-The approach throughout: simulate data from parameters that are known exactly,
+Test data from parameters that are known exactly,
 then check the fitting code recovers them. A curve-fitting routine that has
-never been run against a known answer has not been tested, only executed.
+has to be run against a known answer to be tested.
+
 """
 
 import sys
@@ -19,9 +20,9 @@ from src import kinetics as kin_mod
 from src import qc as qc_mod
 
 
-# --------------------------------------------------------------------------
+
 # Calibration
-# --------------------------------------------------------------------------
+
 
 
 def test_linear_fit_recovers_known_parameters():
@@ -75,9 +76,9 @@ def test_blank_sigma_requires_blanks():
         cal_mod.detection_limits(cal, sigma_source="blank")
 
 
-# --------------------------------------------------------------------------
+
 # Inverse prediction
-# --------------------------------------------------------------------------
+
 
 
 def test_inverse_prediction_round_trips():
@@ -117,9 +118,9 @@ def test_more_replicates_narrow_the_interval():
     assert triple["se"][0] < single["se"][0]
 
 
-# --------------------------------------------------------------------------
+
 # Working range
-# --------------------------------------------------------------------------
+
 
 
 def test_working_range_excludes_poor_recovery():
@@ -136,9 +137,9 @@ def test_working_range_excludes_poor_recovery():
     assert wr["range_low"] > 0.1
 
 
-# --------------------------------------------------------------------------
+
 # Kinetics
-# --------------------------------------------------------------------------
+
 
 
 def test_michaelis_menten_recovers_known_parameters():
@@ -203,9 +204,9 @@ def test_activity_retention_is_a_ratio():
     assert retention[0] == pytest.approx(50.0)
 
 
-# --------------------------------------------------------------------------
+
 # QC
-# --------------------------------------------------------------------------
+
 
 
 def test_z_prime_perfect_separation():
