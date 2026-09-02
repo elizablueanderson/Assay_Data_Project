@@ -1,3 +1,4 @@
+"""
 Ground truth used to simulate (for validating the fitting code):
     Km   = 3.20 mM
     Vmax = 0.850 umol NH3 / min
