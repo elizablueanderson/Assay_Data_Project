@@ -1,5 +1,5 @@
 """
-Standard-curve calibration for colorimetric ammonium assays.
+Standard-curve calibration for assay
 
 Implements the analytical steps required to turn raw absorbance into a
 defensible concentration estimate:
@@ -7,13 +7,8 @@ defensible concentration estimate:
   1. Regression of the calibration standards (linear or 4-parameter logistic)
   2. Detection limits following ICH Q2(R1)
   3. Inverse prediction of unknowns, with propagated uncertainty
-  4. Working-range determination by back-calculated recovery
+  4. Working-range determination by back calculated recovery
 
-The inverse-prediction step is the one most often skipped. Reading a
-concentration off a fitted line is easy; reporting how uncertain that
-concentration is requires propagating the regression error, and that
-uncertainty grows as you move away from the centroid of the standards.
-"""
 
 from dataclasses import dataclass, field
 
@@ -22,9 +17,7 @@ from scipy import stats
 from scipy.optimize import curve_fit
 
 
-# --------------------------------------------------------------------------
 # Linear calibration
-# --------------------------------------------------------------------------
 
 
 @dataclass
@@ -95,9 +88,9 @@ def fit_linear(concentration, signal) -> LinearCalibration:
     )
 
 
-# --------------------------------------------------------------------------
+
 # Detection limits
-# --------------------------------------------------------------------------
+
 
 
 def detection_limits(cal: LinearCalibration, sigma_source="residual", blank_signal=None):
@@ -147,9 +140,9 @@ def detection_limits(cal: LinearCalibration, sigma_source="residual", blank_sign
     }
 
 
-# --------------------------------------------------------------------------
+
 # Inverse prediction
-# --------------------------------------------------------------------------
+
 
 
 def inverse_predict(cal: LinearCalibration, signal, n_replicates=1, alpha=0.05):
@@ -196,9 +189,9 @@ def inverse_predict(cal: LinearCalibration, signal, n_replicates=1, alpha=0.05):
     }
 
 
-# --------------------------------------------------------------------------
+
 # Working range
-# --------------------------------------------------------------------------
+
 
 
 def working_range(cal: LinearCalibration, tolerance=0.20, loq=None):
@@ -248,9 +241,9 @@ def working_range(cal: LinearCalibration, tolerance=0.20, loq=None):
     }
 
 
-# --------------------------------------------------------------------------
+
 # Four-parameter logistic (for pH-indicator assays)
-# --------------------------------------------------------------------------
+
 
 
 def four_pl(x, bottom, top, ec50, hill):
