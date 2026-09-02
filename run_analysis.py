@@ -1,5 +1,5 @@
 """
-End-to-end analysis: raw plate data in, characterised assay out.
+End-to-end analysis: raw plate data + characterised assay 
 
     python scripts/run_analysis.py
 
