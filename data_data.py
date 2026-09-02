@@ -1,10 +1,3 @@
-"""
-Generate example datasets in the schema the pipeline expects.
-
-These are simulated so the repository runs end-to-end for anyone who clones
-it. Replace the three CSVs in data/ with real plate exports -- keep the column
-names and nothing else needs to change.
-
 Ground truth used to simulate (for validating the fitting code):
     Km   = 3.20 mM
     Vmax = 0.850 umol NH3 / min
@@ -67,11 +60,10 @@ def make_kinetics():
 
 def make_formulations():
     """
-    Six encapsulation formulations plus a free-cell control, triplicate.
-
-    Retention is driven down by crosslinker concentration and print shear;
-    biomass loading deliberately varies between formulations so that the
-    normalisation step in the analysis actually matters.
+    Six encapsulation formulations plus a free-cell control
+    Retention is pulled down by crosslinker concentration. 
+    Biomass loading deliberately varies between formulations so that the
+    normalization step in the analysis actually matters.
     """
     specs = [
         ("Free cells", 1.00, 0.95),
