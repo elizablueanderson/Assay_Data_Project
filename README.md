@@ -3,22 +3,23 @@
 Characterisation and validation of a urease activity assay, built to
 compare free and microencapsulated *E. coli* for urea degradation.
 
-**Problem:** Comparing encapsulation formulations requires an assay you can defend.
-Raw absorbance readings do not decide whether a result is reportable: 
+**Problem:** Comparing encapsulation formulations requires an assay that can be defended.
+Raw absorbance readings don't decide whether a result is reportable: 
 what is the lowest concentration this method can quantify, and is a difference 
 between two formulations larger than the noise.
 
-**Approach:** A five-stage pipeline — calibration, detection limits, plate QC,
-inverse prediction, enzyme kinetics — followed by a formulation screen normalised
+**Approach:** A five-stage pipeline: calibration, detection limits, plate QC,
+inverse prediction, enzyme kinetics, followed by a formulation screen normalized
 to biomass.
 
 **Result:** A fully characterised assay: LOQ of 0.188 mM NH₄⁺, validated working
 range 0.25–2.00 mM, Z′ = 0.95, and Michaelis–Menten parameters of
 Km = 3.24 ± 0.13 mM and Vmax = 0.837 ± 0.009 µmol NH₃·min⁻¹. Across six
 encapsulation formulations, retained specific activity spans 21% to 84% of the
-free-cell control.
+free cell control.
 
----
+
+
 
 ## Results
 
@@ -36,51 +37,48 @@ of σ, because they disagree on the same data:
 | SD of blank replicates | 0.019 | 0.057 |
 
 An LOD quoted must name its σ source to be reproducible. This pipeline
-defaults to the residual SD, the most conservative of the three, and states the
+uses the residual SD, the most conservative of the three, and states the
 choice in every output.
 
 ### Enzyme kinetics
 
 ![Kinetics](figures/02_kinetics.png)
 
-Parameters are estimated by non-linear least squares on untransformed rates rather
-than by Lineweaver–Burk. The double-reciprocal transform inflates the error on the
-low-substrate points, which are exactly the points carrying most of the information
-about Km.
+Parameters are estimated by non-linear least squares on untransformed rates. 
+The double-reciprocal transform inflates the error on the low-substrate points, '
+which are the points carrying most of the information about Km.
 
 ### Formulation screen
 
 ![Formulation screen](figures/03_formulation_screen.png)
 
 Activity is normalised to OD₆₀₀ before comparison. Encapsulated preparations do not
-contain the same cell count as the free-cell control, so raw rates would conflate
-"this formulation preserves activity" with "this formulation happens to hold more
-cells".
+contain the same cell count as the free-cell control, so raw rates would confuse
+"this formulation preserves activity" with "this formulation happens to hold more cells".
 
----
+
 
 ## Four decisions that shape the output
 
 
 1. **Working range is defined by recovery, not by R².** A curve can post R² = 0.999
-   and still recover its bottom standard at 60% of nominal, because R² is dominated
-   by high-signal points. Recovery is computed and judged per level.
+   and still recover its bottom standard at 60% of nominal, because it is dominated
+   by high signal points. Recovery is judged per level.
 
-2. **Inverse prediction carries a confidence interval.** The classical Draper & Smith
-   standard error includes a term in `(x̂ − x̄)² / Sxx`, so uncertainty is minimised at
-   the centroid of the standards and widens toward both ends.
+2. **Inverse prediction carries a confidence interval.** The classic Draper & Smith
+   standard error includes a term in `(x̂ − x̄)² / Sxx`, so uncertainty is lowered at
+   the center of the standards and widens toward both ends.
 
 3. **A model with an unconstrained parameter is rejected, even when AIC prefers it.**
-   On the example data, substrate inhibition scores a lower AIC than Michaelis–Menten,
-   but returns Ki = 584 mM against a highest tested substrate of 40 mM. Inhibition
-   that only appears beyond the range you measured is not distinguishable from no
-   inhibition. The identifiability check catches this; AIC alone does not.
+   Substrate inhibition scores a lower AIC than Michaelis–Menten,
+   but returns Ki = 584 mM against a highest tested substrate of 40 mM. This inhibition
+   is not distinguishable from no inhibition.
+   The identifiability check catches this, rather than AIC alone.
 
-4. **Outliers are flagged by median absolute deviation, not mean ± SD.** With three
-   replicates, one bad well inflates the SD enough to hide itself. The median does
-   not move.
+5. **Outliers are flagged by median absolute deviation, not mean ± SD.** With three
+   replicates, one bad well inflates the SD enough to hide itself. The median stays the same.
 
----
+
 
 ## Layout
 
@@ -113,7 +111,7 @@ pytest tests/ -q
 | assay | nh4_mM | replicate | absorbance |
 |---|---|---|---|
 
-Pass every replicate rather than pre-averaging. Replicate scatter defines the
+Pass every replicate rather than pre-averaging because the scatter defines the
 residual SD, and the residual SD sets the detection limits.
 
 **`kinetics.csv`** — progress curves, one row per timepoint
@@ -131,11 +129,7 @@ Include a row labelled `Free cells` as the normalisation reference.
 ## Tests
 
 Fitting routines are validated by simulating from known parameters and confirming
-recovery: the Michaelis–Menten fit returns Km within 0.02 mM of the value used to
-generate the data. Tests also confirm the confidence interval widens away from the
-calibration centroid, that the identifiability guard rejects unconstrained inhibition
-while still detecting genuine inhibition, and that MAD-based flagging catches a
-single bad replicate.
+recovery: a Km within 0.02 mM of the value was returned and used to generate the data. 
 
 ```
 20 passed in 1.32s
