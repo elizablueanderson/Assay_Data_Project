@@ -1,4 +1,5 @@
-"""Figure generation. Every plot shows the data, the fit, and the uncertainty."""
+"""
+Figure generation. Every plot shows the data, the fit, and the uncertainty."""
 
 import matplotlib
 
