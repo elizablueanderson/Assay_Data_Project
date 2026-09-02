@@ -1,18 +1,13 @@
 """
 Urease kinetics: initial rates, Michaelis-Menten parameters, specific activity.
 
-Two things here are deliberate choices rather than defaults.
+Parameters are estimated by non-linear least squares on
+rate data. The double-reciprocal transform is 
+fine as a diagnostic plot and poor as an estimator.
 
-First, parameters are estimated by non-linear least squares on untransformed
-rate data, not by Lineweaver-Burk. The double-reciprocal transform is still
-taught, but taking 1/v inflates the error on the low-substrate points -- the
-exact points that carry most of the information about Km -- and the resulting
-estimates are biased. The transform is fine as a diagnostic plot and poor as
-an estimator.
-
-Second, activity is normalised to biomass before free and encapsulated cells
-are compared. Encapsulated preparations rarely contain the same cell count as
-the free-cell control, so raw rates conflate "this formulation preserves
+Activity is normalized to biomass before free and encapsulated cells
+are compared. Encapsulated preparations usually don't contain the same cell count as
+the free cell control, so raw rates confuse "this formulation preserves
 activity" with "this formulation happens to hold more cells".
 """
 
@@ -23,33 +18,24 @@ from scipy import stats
 from scipy.optimize import curve_fit
 
 # Urea hydrolysis: (NH2)2CO + H2O -> 2 NH3 + CO2
-# One mole of urea consumed liberates two moles of ammonia.
 NH3_PER_UREA = 2.0
 
 # One unit of urease liberates 1.0 umol of NH3 per minute (pH 7.0, 25 C).
 UMOL_NH3_PER_UNIT_PER_MIN = 1.0
 
 
-# --------------------------------------------------------------------------
+
 # Initial rates
-# --------------------------------------------------------------------------
+
 
 
 def initial_rate(time_min, concentration_umol, max_fraction=0.10, substrate_umol=None):
     """
     Estimate an initial rate by linear regression over the early timepoints.
 
-    Michaelis-Menten parameters describe initial velocity, so the fit must be
-    restricted to the window where substrate depletion has not yet bent the
-    progress curve. Fitting the whole curve systematically underestimates
-    Vmax.
-
-    If substrate_umol is given, timepoints beyond max_fraction of substrate
-    turnover are dropped. Otherwise the first half of the series is used.
-
     Returns the rate in umol NH3 per minute, its standard error, and the R^2
-    of the window actually fitted -- an R^2 well below ~0.98 means the window
-    is still too wide.
+    of the window actually fitted. An R^2 far below ~0.98 means the window
+    is too wide.
     """
     t = np.asarray(time_min, dtype=float)
     c = np.asarray(concentration_umol, dtype=float)
@@ -79,9 +65,8 @@ def initial_rate(time_min, concentration_umol, max_fraction=0.10, substrate_umol
     }
 
 
-# --------------------------------------------------------------------------
 # Models
-# --------------------------------------------------------------------------
+
 
 
 def michaelis_menten(s, vmax, km):
@@ -95,7 +80,7 @@ def substrate_inhibition(s, vmax, km, ki):
     v = Vmax * [S] / (Km + [S] * (1 + [S]/Ki))
 
     Urease shows measurable substrate inhibition at high urea in several
-    systems. If rates roll off at the top of the substrate series, a plain
+    systems. If rates level off at the top of the substrate series, a plain
     Michaelis-Menten fit will absorb the roll-off by understating Vmax.
     """
     s = np.asarray(s, dtype=float)
@@ -130,19 +115,12 @@ def _is_identifiable(fit: KineticFit, substrate, max_rel_se=0.5, range_multiple=
     Decide whether the substrate-inhibition Ki is actually constrained by the
     data, rather than being a free parameter that soaked up noise.
 
-    Two failure modes are caught:
+    Two failure modes:
 
-      1. Ki lands far above the highest substrate tested. If inhibition only
-         sets in beyond the range you measured, the data cannot distinguish it
-         from no inhibition at all.
-      2. Ki carries a large relative standard error, meaning the fit is
-         indifferent to its value.
+      1. Ki lands far above the highest substrate tested = the data can't distinguish it
+         from no inhibition at all. 
+      2. Ki carries a large relative standard error =  fit is indifferent to its value.
 
-    AIC alone will not catch either one: adding a parameter almost always
-    lowers the residual sum of squares a little, and with few points the
-    penalty term is small. Checking identifiability before accepting the more
-    complex model is what stops a well-fitting curve from reporting a
-    mechanism that was never observed.
     """
     if "ki" not in fit.params:
         return True
@@ -177,8 +155,8 @@ def fit_kinetics(substrate_mm, rate, model="auto"):
     Fit Michaelis-Menten and, optionally, substrate inhibition.
 
     model="auto" fits both and returns whichever has the lower AIC, so the
-    extra parameter has to earn its place rather than being justified by the
-    inevitable improvement in R^2.
+    extra parameter has to be necessary rather than being justified by the
+    improvement in R^2.
     """
     s = np.asarray(substrate_mm, dtype=float)
     v = np.asarray(rate, dtype=float)
@@ -235,9 +213,8 @@ def fit_kinetics(substrate_mm, rate, model="auto"):
     return {"best": fits[key], "all": fits}
 
 
-# --------------------------------------------------------------------------
-# Normalisation
-# --------------------------------------------------------------------------
+# Normalization
+
 
 
 def specific_activity(rate_umol_per_min, biomass, biomass_unit="OD600"):
@@ -245,8 +222,8 @@ def specific_activity(rate_umol_per_min, biomass, biomass_unit="OD600"):
     Convert a raw rate into units per unit biomass.
 
     1 U = 1 umol NH3 released per minute. Normalising by OD600 (or by mg
-    protein, or by dry cell weight) is what makes a free-cell control and an
-    encapsulated bead comparable at all.
+    protein, or by dry cell weight) is what makes a free cell control and
+    encapsulated strain comparable.
     """
     rate = np.asarray(rate_umol_per_min, dtype=float)
     mass = np.asarray(biomass, dtype=float)
@@ -265,12 +242,10 @@ def specific_activity(rate_umol_per_min, biomass, biomass_unit="OD600"):
 def activity_retention(encapsulated_specific, free_specific):
     """
     Retention (%) of specific activity after encapsulation.
-
-    The headline number for a formulation screen. Below 100% means the
-    encapsulation process cost activity -- through shear during printing,
+     Below 100% means the encapsulation process cost activity during printing,
     crosslinker chemistry, or diffusional limitation across the capsule wall.
-    Above 100% is not impossible (matrix stabilisation) but is more often a
-    sign that the biomass normalisation is wrong.
+    Above 100% is not impossible but is a
+    sign that the biomass normalization is wrong.
     """
     enc = np.asarray(encapsulated_specific, dtype=float)
     free = np.asarray(free_specific, dtype=float)
