@@ -1,1 +1,171 @@
-# Assay_Data_Project
+# Urease Assay Pipeline
+
+Characterisation and validation of a colorimetric urease activity assay, built to
+compare free and microencapsulated *E. coli* for urea degradation.
+
+**Problem.** Comparing encapsulation formulations requires an assay you can defend.
+Raw absorbance readings do not answer the questions that decide whether a result is
+reportable: what is the lowest concentration this method can quantify, how wrong
+might a back-calculated number be, and is a difference between two formulations
+larger than the noise.
+
+**Approach.** A five-stage pipeline — calibration, detection limits, plate QC,
+inverse prediction, enzyme kinetics — followed by a formulation screen normalised
+to biomass.
+
+**Result.** A fully characterised assay: LOQ of 0.188 mM NH₄⁺, validated working
+range 0.25–2.00 mM, Z′ = 0.95, and Michaelis–Menten parameters of
+Km = 3.24 ± 0.13 mM and Vmax = 0.837 ± 0.009 µmol NH₃·min⁻¹. Across six
+encapsulation formulations, retained specific activity spans 21% to 84% of the
+free-cell control.
+
+---
+
+## Results
+
+### Calibration and detection limits
+
+![Standard curve](figures/01_standard_curve.png)
+
+LOD and LOQ follow ICH Q2(R1). The pipeline reports all three permitted estimates
+of σ, because they disagree by more than threefold on the same data:
+
+| σ source | LOD (mM) | LOQ (mM) |
+|---|---|---|
+| Residual SD of regression | 0.062 | 0.188 |
+| SE of intercept | 0.018 | 0.053 |
+| SD of blank replicates | 0.019 | 0.057 |
+
+An LOD quoted without naming its σ source is not reproducible. This pipeline
+defaults to the residual SD, the most conservative of the three, and states the
+choice in every output.
+
+### Uncertainty of back-calculated concentrations
+
+![Inverse prediction](figures/04_inverse_prediction.png)
+
+Reading a concentration off the fitted line is easy. Reporting how uncertain it is
+requires propagating the regression error, and that error is not constant. A sample
+near the LOQ carries roughly 20% relative uncertainty off a curve with R² = 0.999 —
+the same curve that gives 1.6% at the top of the range.
+
+### Enzyme kinetics
+
+![Kinetics](figures/02_kinetics.png)
+
+Parameters are estimated by non-linear least squares on untransformed rates rather
+than by Lineweaver–Burk. The double-reciprocal transform inflates the error on the
+low-substrate points, which are exactly the points carrying most of the information
+about Km.
+
+### Formulation screen
+
+![Formulation screen](figures/03_formulation_screen.png)
+
+Activity is normalised to OD₆₀₀ before comparison. Encapsulated preparations do not
+contain the same cell count as the free-cell control, so raw rates would conflate
+"this formulation preserves activity" with "this formulation happens to hold more
+cells".
+
+---
+
+## Four decisions that shape the output
+
+Most of the value in this repository is in choices that a default analysis gets
+wrong.
+
+1. **Working range is defined by recovery, not by R².** A curve can post R² = 0.999
+   and still recover its bottom standard at 60% of nominal, because R² is dominated
+   by high-signal points. Recovery is computed and judged per level.
+
+2. **Inverse prediction carries a confidence interval.** The classical Draper & Smith
+   standard error includes a term in `(x̂ − x̄)² / Sxx`, so uncertainty is minimised at
+   the centroid of the standards and widens toward both ends.
+
+3. **A model with an unconstrained parameter is rejected, even when AIC prefers it.**
+   On the example data, substrate inhibition scores a lower AIC than Michaelis–Menten,
+   but returns Ki = 584 mM against a highest tested substrate of 40 mM. Inhibition
+   that only appears beyond the range you measured is not distinguishable from no
+   inhibition. The identifiability check catches this; AIC alone does not.
+
+4. **Outliers are flagged by median absolute deviation, not mean ± SD.** With three
+   replicates, one bad well inflates the SD enough to hide itself. The median does
+   not move.
+
+---
+
+## Layout
+
+```
+urease-assay-pipeline/
+├── src/
+│   ├── calibration.py   standard curves, LOD/LOQ, inverse prediction, working range
+│   ├── kinetics.py      initial rates, Michaelis-Menten, identifiability, normalisation
+│   ├── qc.py            replicate CV, Z'-factor, spike recovery, outlier flagging
+│   └── plotting.py      figure generation
+├── scripts/
+│   ├── run_analysis.py       end-to-end analysis
+│   └── make_example_data.py  regenerate the example datasets
+├── tests/test_pipeline.py    20 tests
+├── data/                     input CSVs
+├── figures/                  generated figures
+└── results/                  generated summary tables
+```
+
+## Running it
+
+```bash
+pip install -r requirements.txt
+python scripts/run_analysis.py
+pytest tests/ -q
+```
+
+## Using your own data
+
+The three CSVs in `data/` are **simulated**, so the repository runs end-to-end for
+anyone who clones it. Replace them with real plate exports; keep the column names
+and nothing else needs to change.
+
+**`standards.csv`** — one row per well, replicates as separate rows
+
+| assay | nh4_mM | replicate | absorbance |
+|---|---|---|---|
+
+Pass every replicate rather than pre-averaging. Replicate scatter defines the
+residual SD, and the residual SD sets the detection limits.
+
+**`kinetics.csv`** — progress curves, one row per timepoint
+
+| urea_mM | replicate | time_min | nh3_umol |
+|---|---|---|---|
+
+**`formulations.csv`** — one row per bead preparation
+
+| formulation | replicate | od600 | rate_umol_per_min |
+|---|---|---|---|
+
+Include a row labelled `Free cells` as the normalisation reference.
+
+## Tests
+
+Fitting routines are validated by simulating from known parameters and confirming
+recovery: the Michaelis–Menten fit returns Km within 0.02 mM of the value used to
+generate the data. Tests also confirm the confidence interval widens away from the
+calibration centroid, that the identifiability guard rejects unconstrained inhibition
+while still detecting genuine inhibition, and that MAD-based flagging catches a
+single bad replicate.
+
+```
+20 passed in 1.32s
+```
+
+## References
+
+- ICH Q2(R1), *Validation of Analytical Procedures: Text and Methodology* — detection and quantitation limits
+- Draper, N.R. & Smith, H. (1998). *Applied Regression Analysis*, 3rd ed. — inverse prediction
+- Zhang, J.-H., Chung, T.D.Y. & Oldenburg, K.R. (1999). A simple statistical parameter for use in evaluation of high throughput screening assays. *J Biomol Screen* 4(2), 67–73.
+
+## Context
+
+Written alongside ongoing research on microencapsulation of *E. coli* DH5α for urea
+degradation.
