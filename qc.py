@@ -1,9 +1,8 @@
 """
-Assay quality control.
+Assay quality control
 
-These are the numbers that decide whether a plate is reportable. Running them
-before the biology means a bad plate gets caught as a bad plate, rather than
-being interpreted as a surprising result.
+These numbers that decide whether a plate is reportable. Running them
+beforehand means a bad plate gets caught as a bad plate, rather than as a surprising result.
 """
 
 import numpy as np
@@ -12,11 +11,11 @@ import pandas as pd
 
 def replicate_cv(df, group_cols, value_col):
     """
-    Coefficient of variation within each replicate group.
+    Coefficient of variation within each replicate group
 
-    Rough expectations for a plate-based colorimetric assay: under 10% CV is
-    good, 10-20% is usable for a screen, and above 20% usually points at
-    pipetting or an incompletely mixed plate rather than at biology.
+    Rough expectations for a plate-based assay: under 10% CV is
+    good, 10-20% is usable for a screen, and above 20% usually shows error in
+    pipetting or an incompletely mixed plate 
     """
     grouped = df.groupby(group_cols)[value_col]
     out = grouped.agg(["mean", "std", "count"]).reset_index()
@@ -34,13 +33,10 @@ def z_prime(positive_controls, negative_controls):
         Z' = 1 - (3*sd_pos + 3*sd_neg) / |mean_pos - mean_neg|
 
     Interpretation:
-        Z' > 0.5        excellent separation
+        Z' > 0.5        great separation
         0 < Z' <= 0.5   usable but the bands are close
-        Z' <= 0         controls overlap; the plate cannot discriminate
+        Z' <= 0         controls overlap, the plate can't discriminate
 
-    Worth computing even outside formal screening, because it summarises
-    dynamic range and noise in a single number and makes plate-to-plate
-    comparison honest.
     """
     pos = np.asarray(positive_controls, dtype=float)
     neg = np.asarray(negative_controls, dtype=float)
@@ -72,13 +68,13 @@ def z_prime(positive_controls, negative_controls):
 
 def spike_recovery(measured, nominal_spike, background=0.0, tolerance=0.20):
     """
-    Percent recovery of a known spike into real sample matrix.
+    Percent recovery of a known spike.
 
-    This is the check for matrix effects. A curve built in clean buffer can be
+    This is the check for matrix effects, A curve built in a buffer can be
     perfectly linear and still misread a sample, because the capsule material,
-    residual media, or turbidity shifts the readout. Buffer standards cannot
-    detect that; a spike into matrix can.
+    residual media, or turbidity shifts the readout.
     """
+   
     measured = np.atleast_1d(np.asarray(measured, dtype=float))
     nominal = np.atleast_1d(np.asarray(nominal_spike, dtype=float))
     background = np.asarray(background, dtype=float)
@@ -96,14 +92,12 @@ def spike_recovery(measured, nominal_spike, background=0.0, tolerance=0.20):
 
 def flag_outliers(values, z_threshold=3.0):
     """
-    Flag replicates by modified Z-score (median absolute deviation).
+    Flag replicates by modified Z-score.
 
-    MAD is used instead of mean/SD because with three or four replicates a
-    single bad well drags the mean and inflates the SD enough to hide itself.
-    The median does not move.
+    It is used instead of mean/SD because with three or four replicates a
+    single bad well messes with the mean and inflates the SD enough to hide the bad result.
+    The median doesn't move.
 
-    Flagging is not deleting. Excluded wells belong in the record with a
-    stated reason.
     """
     v = np.asarray(values, dtype=float)
     median = float(np.median(v))
